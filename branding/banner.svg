@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 560" width="1280" height="560">
+  <defs>
+    <radialGradient id="bg" cx="30%" cy="45%" r="90%">
+      <stop offset="0" stop-color="#2a2368"/>
+      <stop offset="1" stop-color="#0b0a22"/>
+    </radialGradient>
+    <linearGradient id="strap" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#2b2660"/>
+      <stop offset="0.5" stop-color="#3b3580"/>
+      <stop offset="1" stop-color="#2b2660"/>
+    </linearGradient>
+    <linearGradient id="case" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6d68c9"/>
+      <stop offset="1" stop-color="#3a3488"/>
+    </linearGradient>
+    <linearGradient id="teal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2fc7b0"/>
+      <stop offset="1" stop-color="#3f6fd8"/>
+    </linearGradient>
+    <linearGradient id="coral" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff8a5c"/>
+      <stop offset="1" stop-color="#e2475f"/>
+    </linearGradient>
+    <linearGradient id="title" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#c9c5ff"/>
+    </linearGradient>
+    <radialGradient id="ball" cx="38%" cy="35%" r="70%">
+      <stop offset="0" stop-color="#ffb08f"/>
+      <stop offset="0.5" stop-color="#f2614f"/>
+      <stop offset="1" stop-color="#b7323f"/>
+    </radialGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="10"/>
+    </filter>
+    <filter id="haze" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="60"/>
+    </filter>
+  </defs>
+
+  <rect width="1280" height="560" fill="url(#bg)"/>
+  <!-- ambient colour haze -->
+  <circle cx="330" cy="200" r="150" fill="#2fc7b0" opacity="0.18" filter="url(#haze)"/>
+  <circle cx="360" cy="380" r="150" fill="#e2475f" opacity="0.16" filter="url(#haze)"/>
+
+  <!-- watch (same drawing as avatar.svg), centred at (340, 280) -->
+  <g transform="translate(340 280) scale(0.95) translate(-256 -256)">
+    <path d="M186 40 h140 l-10 100 h-120 z" fill="url(#strap)"/>
+    <path d="M196 372 h120 l10 100 h-140 z" fill="url(#strap)"/>
+    <rect x="394" y="196" width="22" height="50" rx="8" fill="#5b56b8"/>
+    <rect x="396" y="270" width="14" height="40" rx="6" fill="#4a4599"/>
+    <rect x="106" y="116" width="294" height="280" rx="78" fill="url(#case)"/>
+    <rect x="124" y="134" width="258" height="244" rx="62" fill="#07061a"/>
+    <ellipse cx="253" cy="256" rx="80" ry="90" fill="#4c45c2" opacity="0.45" filter="url(#glow)"/>
+    <rect x="190" y="166" width="126" height="94" rx="47" fill="none" stroke="url(#teal)" stroke-width="28"/>
+    <rect x="190" y="252" width="126" height="94" rx="47" fill="none" stroke="url(#coral)" stroke-width="28"/>
+    <circle cx="253" cy="256" r="24" fill="url(#ball)"/>
+    <ellipse cx="246" cy="247" rx="8" ry="5" fill="#ffffff" opacity="0.35"/>
+  </g>
+
+  <!-- text -->
+  <g font-family="Noto Sans, DejaVu Sans, sans-serif">
+    <text x="640" y="240" font-size="80" font-weight="700" fill="url(#title)" letter-spacing="-1">BalanceWatch</text>
+    <text x="644" y="300" font-size="32" fill="#b9b5e8">Учёт личных финансов на Apple Watch</text>
+
+    <!-- tags -->
+    <g font-size="22" font-weight="600" fill="#e8e6ff">
+      <rect x="644" y="344" width="166" height="44" rx="22" fill="#ffffff" fill-opacity="0.08" stroke="#ffffff" stroke-opacity="0.18"/>
+      <text x="727" y="374" text-anchor="middle">watchOS 10+</text>
+      <rect x="824" y="344" width="122" height="44" rx="22" fill="#ffffff" fill-opacity="0.08" stroke="#ffffff" stroke-opacity="0.18"/>
+      <text x="885" y="374" text-anchor="middle">SwiftUI</text>
+      <rect x="960" y="344" width="142" height="44" rx="22" fill="#ffffff" fill-opacity="0.08" stroke="#ffffff" stroke-opacity="0.18"/>
+      <text x="1031" y="374" text-anchor="middle">SwiftData</text>
+    </g>
+    <g font-size="22" font-weight="600">
+      <rect x="644" y="402" width="288" height="44" rx="22" fill="#2fc7b0" fill-opacity="0.16" stroke="#2fc7b0" stroke-opacity="0.5"/>
+      <text x="788" y="432" text-anchor="middle" fill="#8ff0df">Sync с BalanceServer</text>
+    </g>
+  </g>
+</svg>

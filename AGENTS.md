@@ -28,6 +28,7 @@ BalanceWatch/
 ├── AGENTS.md
 ├── README.md
 ├── .github/workflows/build.yml   # CI: сборка для симулятора и устройства
+├── branding/                     # аватар репозитория, не входит в бандл
 ├── BalanceWatch.xcodeproj/        # один таргет и одна схема — BalanceWatch
 └── BalanceWatch/
     ├── App/
