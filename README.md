@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="branding/banner.png" alt="BalanceWatch — учёт личных финансов на Apple Watch" width="100%">
+</p>
+
 # BalanceWatch
 
 Самостоятельное (watch-only) приложение Balance для watchOS 10+, выделенное
@@ -9,6 +13,7 @@
 
 ```text
 BalanceWatch/
+├── branding/             # аватар и баннер для README (PNG + SVG-исходники)
 ├── BalanceWatch.xcodeproj/
 └── BalanceWatch/
     ├── App/              # точка входа и экраны часов
