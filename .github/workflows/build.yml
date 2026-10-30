@@ -1,0 +1,60 @@
+name: Build
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build (${{ matrix.name }})
+    runs-on: macos-15
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: watchOS Simulator
+            destination: generic/platform=watchOS Simulator
+          - name: watchOS Device
+            destination: generic/platform=watchOS
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Show environment
+        run: |
+          xcodebuild -version
+          xcodebuild -showsdks | grep -i watch
+
+      - name: Build
+        run: |
+          set -o pipefail
+          mkdir -p build
+          xcodebuild \
+            -project BalanceWatch.xcodeproj \
+            -scheme BalanceWatch \
+            -configuration Debug \
+            -destination '${{ matrix.destination }}' \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build | tee build/xcodebuild.log
+
+      - name: Upload build log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodebuild-log-${{ strategy.job-index }}
+          path: build/xcodebuild.log
