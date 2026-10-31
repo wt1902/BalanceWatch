@@ -33,9 +33,13 @@ private struct WatchHomeView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
                     VStack(alignment: .leading, spacing: 3) {
-                        Text("Общий баланс")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                        HStack(spacing: 5) {
+                            Image(systemName: "wallet.bifold")
+                                .font(.caption2.weight(.semibold))
+                            Text("Общий баланс")
+                                .font(.caption)
+                        }
+                        .foregroundStyle(BalancePalette.mint.opacity(0.85))
                         Text(total.value.formattedCurrency(code: currencyCode))
                             .font(.title3.bold())
                             .minimumScaleFactor(0.7)
@@ -49,7 +53,7 @@ private struct WatchHomeView: View {
                     .padding(12)
                     .background(
                         LinearGradient(
-                            colors: [.indigo, .purple],
+                            colors: [BalancePalette.cardTop, BalancePalette.cardBottom],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ),
@@ -60,13 +64,15 @@ private struct WatchHomeView: View {
                     HStack(spacing: 8) {
                         watchMetric(
                             title: "Доходы",
+                            symbol: "arrow.down.left",
                             amount: monthSummary.income,
-                            tint: .green
+                            tint: BalancePalette.income
                         )
                         watchMetric(
                             title: "Расходы",
+                            symbol: "arrow.up.right",
                             amount: monthSummary.expenses,
-                            tint: .red
+                            tint: BalancePalette.expense
                         )
                     }
 
@@ -77,6 +83,7 @@ private struct WatchHomeView: View {
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.borderedProminent)
+                    .tint(BalancePalette.forest)
 
                     VStack(spacing: 4) {
                         if account.supportsV2 {
@@ -137,7 +144,7 @@ private struct WatchHomeView: View {
                                     Text((transaction.kind == .income ? "+" : "−")
                                         + transaction.amount.formattedCurrency(code: currency.currency(of: transaction)))
                                         .font(.caption2.weight(.semibold))
-                                        .foregroundStyle(transaction.kind == .income ? .green : .secondary)
+                                        .foregroundStyle(transaction.kind == .income ? BalancePalette.income : .secondary)
                                 }
                                 Spacer()
                             }
@@ -158,25 +165,38 @@ private struct WatchHomeView: View {
         }
     }
 
-    private func watchMetric(title: String, amount: Double, tint: Color) -> some View {
+    private func watchMetric(title: String, symbol: String, amount: Double, tint: Color) -> some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text(title)
+            Label(title, systemImage: symbol)
                 .font(.caption2)
                 .foregroundStyle(.secondary)
+                .labelStyle(TintedIconLabelStyle(tint: tint))
             Text(amount.formattedCurrency(code: currencyCode))
                 .font(.caption.bold())
+                .foregroundStyle(tint)
                 .lineLimit(1)
                 .minimumScaleFactor(0.65)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(9)
-        .background(tint.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
+        .background(tint.opacity(0.14), in: RoundedRectangle(cornerRadius: 12))
     }
 
     private func transactionTint(_ transaction: FinanceTransaction) -> Color {
         if transaction.categoryColorName == "auto" {
-            return FinanceCategory.find(named: transaction.categoryName)?.tint ?? .indigo
+            return FinanceCategory.find(named: transaction.categoryName)?.tint ?? BalancePalette.forest
         }
         return FinanceCategory.color(named: transaction.categoryColorName)
+    }
+}
+
+/// Иконка метрики в цвете метрики, подпись — вторичным цветом.
+private struct TintedIconLabelStyle: LabelStyle {
+    let tint: Color
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(spacing: 3) {
+            configuration.icon.foregroundStyle(tint)
+            configuration.title
+        }
     }
 }

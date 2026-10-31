@@ -29,7 +29,8 @@ BalanceWatch/
 ├── README.md
 ├── .github/workflows/build.yml   # CI: сборка для симулятора и устройства
 ├── docs/CONTRACT_V2.md           # общий контракт экосистемы v2 (копия)
-├── branding/                     # аватар репозитория, не входит в бандл
+├── branding/                     # icon.svg, avatar, banner, render.sh; не входит в бандл
+├── docs/                         # CONTRACT_V2.md, скриншоты для баннера
 ├── BalanceWatch.xcodeproj/        # один таргет и одна схема — BalanceWatch
 └── BalanceWatch/
     ├── App/
@@ -210,3 +211,11 @@ SwiftData/SwiftUI, а `FinanceCalculations` работает через прот
 - [ ] Секреты и токены не попали в репозиторий и логи.
 - [ ] CI собирает проект для симулятора и для устройства.
 - [ ] README/AGENTS.md обновлены, если поменялась структура или сборка.
+
+## Оформление
+
+- Цвета интерфейса — только из `BalancePalette` (`Shared/AppTheme.swift`),
+  палитра «Лес», общая с BalanceFlutter. Не возвращай indigo/purple.
+- Иконка, аватар и баннер рендерятся из SVG: `bash branding/render.sh`
+  (нужен `resvg`). PNG в `AppIcon.appiconset` руками не правь.
+- Аватар репозитория в Gitea обновляется из `branding/avatar.png`.

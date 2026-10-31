@@ -55,8 +55,8 @@ struct WatchAnalyticsView: View {
             }
 
             Section("Итоги") {
-                metric("Доходы", summary.income, .green)
-                metric("Расходы", summary.expenses, .red)
+                metric("Доходы", summary.income, BalancePalette.income)
+                metric("Расходы", summary.expenses, BalancePalette.expense)
                 LabeledContent("Результат", value: summary.balance.formattedCurrency(code: currencyCode))
                 LabeledContent(
                     "Сбережения",
@@ -100,7 +100,7 @@ struct WatchAnalyticsView: View {
 
     private func tint(for item: CategorySpending) -> Color {
         item.colorName == "auto"
-            ? FinanceCategory.find(named: item.name)?.tint ?? .indigo
+            ? FinanceCategory.find(named: item.name)?.tint ?? BalancePalette.forest
             : FinanceCategory.color(named: item.colorName)
     }
 }
@@ -173,7 +173,7 @@ struct WatchTransactionsView: View {
 
     private func tint(_ transaction: FinanceTransaction) -> Color {
         transaction.categoryColorName == "auto"
-            ? FinanceCategory.find(named: transaction.categoryName)?.tint ?? .indigo
+            ? FinanceCategory.find(named: transaction.categoryName)?.tint ?? BalancePalette.forest
             : FinanceCategory.color(named: transaction.categoryColorName)
     }
 }

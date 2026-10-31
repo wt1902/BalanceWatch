@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="branding/banner.png" alt="BalanceWatch — учёт личных финансов на Apple Watch" width="100%">
+  <img src="branding/banner.png" alt="BalanceWatch — личные финансы на Apple Watch" width="100%">
 </p>
 
 # BalanceWatch
@@ -13,7 +13,8 @@
 
 ```text
 BalanceWatch/
-├── branding/             # аватар и баннер для README (PNG + SVG-исходники)
+├── branding/             # иконка, аватар и баннер (SVG-исходники, PNG, render.sh)
+├── docs/                 # скриншоты для баннера
 ├── docs/CONTRACT_V2.md   # общий контракт экосистемы v2 (копия, одинаковая во всех репозиториях)
 ├── BalanceWatch.xcodeproj/
 └── BalanceWatch/
@@ -75,3 +76,15 @@ Simulator и watchOS device (без подписи). Запускается на
 кода из монорепозитория. Протокол синхронизации и правила расчётов должны
 совпадать с остальными клиентами Balance: при изменении контракта на
 сервере переносите правки и сюда.
+
+## Оформление
+
+Палитра «Лес» — та же, что у пресета по умолчанию в BalanceFlutter: карточка
+баланса в зелёном градиенте, доходы бирюзовые (↙), расходы оранжевые (↗),
+мятный акцент (`BalancePalette` в `Shared/AppTheme.swift`). Иконка — тот же
+рисунок, что у Flutter-приложения (`branding/icon.svg`).
+
+После правки SVG или скриншотов в `docs/` выполни `bash branding/render.sh`
+(нужен `resvg`): скрипт перерисует все размеры иконки в
+`Assets.xcassets/AppIcon.appiconset`, `branding/avatar.png` (512×512) и
+`branding/banner.png` (1280×640). Шрифты Roboto лежат в `branding/fonts`.

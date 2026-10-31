@@ -80,7 +80,7 @@ struct WatchAccountsView: View {
             VStack(alignment: .leading) {
                 Text(title).lineLimit(1)
                 Text(Money.double(cents).formattedCurrency(code: code))
-                    .font(.caption2).foregroundStyle(cents < 0 ? .red : .secondary)
+                    .font(.caption2).foregroundStyle(cents < 0 ? BalancePalette.expense : .secondary)
             }
         }
     }

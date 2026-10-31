@@ -11,7 +11,7 @@ struct BalanceWatchApp: App {
         WindowGroup {
             WatchRootView()
                 .id(ledgerScope)
-                .tint(.indigo)
+                .tint(BalancePalette.accent)
                 .preferredColorScheme(AppTheme(rawValue: appTheme)?.colorScheme)
                 .modelContainer(containers.container(for: ledgerScope))
         }
