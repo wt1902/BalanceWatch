@@ -2,16 +2,29 @@ import SwiftData
 import SwiftUI
 
 struct WatchRootView: View {
+    var body: some View {
+        CurrencyContextProvider { WatchHomeView() }
+    }
+}
+
+private struct WatchHomeView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.currencyContext) private var currency
+    @StateObject private var account = ServerAccountStore.shared
     @Query(sort: \FinanceTransaction.date, order: .reverse)
     private var transactions: [FinanceTransaction]
-    @AppStorage("currencyCode") private var currencyCode = SupportedCurrency.RUB.rawValue
+    @Query private var transfers: [FinanceTransfer]
     @State private var showingAddTransaction = false
 
+    private var currencyCode: String { currency.base }
+    private var total: MoneyTotal {
+        FinanceCalculations.totalBalance(transactions: transactions, transfers: transfers, context: currency)
+    }
     private var monthSummary: FinancePeriodSummary {
         FinanceCalculations.summary(
             transactions: transactions,
-            in: FinanceCalculations.monthInterval(containing: .now)
+            in: FinanceCalculations.monthInterval(containing: .now),
+            context: currency
         )
     }
 
@@ -23,10 +36,14 @@ struct WatchRootView: View {
                         Text("Общий баланс")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        Text(FinanceCalculations.totalBalance(transactions: transactions)
-                            .formattedCurrency(code: currencyCode))
+                        Text(total.value.formattedCurrency(code: currencyCode))
                             .font(.title3.bold())
                             .minimumScaleFactor(0.7)
+                        if let warning = currency.missingRateWarning(total.missing.union(monthSummary.missing)) {
+                            Label(warning, systemImage: "exclamationmark.triangle")
+                                .font(.caption2)
+                                .lineLimit(2)
+                        }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(12)
@@ -62,6 +79,13 @@ struct WatchRootView: View {
                     .buttonStyle(.borderedProminent)
 
                     VStack(spacing: 4) {
+                        if account.supportsV2 {
+                            NavigationLink {
+                                WatchAccountsView()
+                            } label: {
+                                Label("Счета", systemImage: "creditcard")
+                            }
+                        }
                         NavigationLink {
                             WatchAnalyticsView()
                         } label: {
@@ -111,7 +135,7 @@ struct WatchRootView: View {
                                         .font(.caption)
                                         .lineLimit(1)
                                     Text((transaction.kind == .income ? "+" : "−")
-                                        + transaction.amount.formattedCurrency(code: currencyCode))
+                                        + transaction.amount.formattedCurrency(code: currency.currency(of: transaction)))
                                         .font(.caption2.weight(.semibold))
                                         .foregroundStyle(transaction.kind == .income ? .green : .secondary)
                                 }
@@ -121,7 +145,7 @@ struct WatchRootView: View {
                     }
                 }
             }
-            .navigationTitle("Баланс")
+            .navigationTitle(account.ledgerID.isEmpty ? "Баланс" : account.ledgerName)
             .sheet(isPresented: $showingAddTransaction) {
                 WatchAddTransactionView()
             }

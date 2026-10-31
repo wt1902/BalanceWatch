@@ -28,6 +28,15 @@ final class FinanceTransaction {
     var isBalanceAdjustment: Bool = false
     var kindRawValue: String = "expense"
     var syncUpdatedAt: Date = Date.now
+    /// v2: счёт (`accountId` на проводе), `nil` — «Без счёта».
+    var accountID: String?
+    /// v2: валюта суммы; `nil` — валюта счёта, иначе базовая.
+    var currency: String?
+    /// Идентификатор записи на проводе. `nil` у записей, созданных до v2:
+    /// для них остаётся `id.uuidString`, чтобы не плодить дубли на сервере.
+    var syncID: String?
+    /// Незнакомые поля payload (теги, recurringId, …) — отправляются обратно как есть.
+    var extraPayload: Data?
 
     init(
         id: UUID = UUID(),
@@ -40,6 +49,8 @@ final class FinanceTransaction {
         categoryColorName: String = "auto",
         isBalanceAdjustment: Bool = false,
         kind: TransactionKind,
+        accountID: String? = nil,
+        currency: String? = nil,
         syncUpdatedAt: Date = .now
     ) {
         self.id = id
@@ -52,8 +63,13 @@ final class FinanceTransaction {
         self.categoryColorName = categoryColorName
         self.isBalanceAdjustment = isBalanceAdjustment
         self.kindRawValue = kind.rawValue
+        self.accountID = accountID
+        self.currency = currency
+        self.syncID = id.uuidString.lowercased()
         self.syncUpdatedAt = syncUpdatedAt
     }
+
+    var wireID: String { syncID ?? id.uuidString }
 
     var kind: TransactionKind {
         get { TransactionKind(rawValue: kindRawValue) ?? .expense }

@@ -3,15 +3,17 @@ import SwiftUI
 
 @main
 struct BalanceWatchApp: App {
-    private let modelContainer = BalanceModelContainer.make()
+    private let containers = LedgerContainers()
     @AppStorage("appTheme") private var appTheme = AppTheme.system.rawValue
+    @AppStorage(LedgerSelection.scopeKey) private var ledgerScope = ""
 
     var body: some Scene {
         WindowGroup {
             WatchRootView()
+                .id(ledgerScope)
                 .tint(.indigo)
                 .preferredColorScheme(AppTheme(rawValue: appTheme)?.colorScheme)
+                .modelContainer(containers.container(for: ledgerScope))
         }
-        .modelContainer(modelContainer)
     }
 }

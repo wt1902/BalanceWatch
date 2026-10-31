@@ -10,6 +10,8 @@ final class MonthlyBudget {
     var limit: Double = 0
     var monthStart: Date = Date.now
     var syncUpdatedAt: Date = Date.now
+    var syncID: String?
+    var extraPayload: Data?
 
     init(
         id: UUID = UUID(),
@@ -26,6 +28,9 @@ final class MonthlyBudget {
         self.categoryEmoji = categoryEmoji
         self.limit = limit
         self.monthStart = monthStart
+        self.syncID = id.uuidString.lowercased()
         self.syncUpdatedAt = syncUpdatedAt
     }
+
+    var wireID: String { syncID ?? id.uuidString }
 }

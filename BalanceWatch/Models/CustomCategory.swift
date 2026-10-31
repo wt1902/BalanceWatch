@@ -11,6 +11,8 @@ final class CustomCategory {
     var kindRawValue: String = "expense"
     var createdAt: Date = Date.now
     var syncUpdatedAt: Date = Date.now
+    var syncID: String?
+    var extraPayload: Data?
 
     init(
         id: UUID = UUID(),
@@ -29,8 +31,11 @@ final class CustomCategory {
         self.colorName = colorName
         self.kindRawValue = kind.rawValue
         self.createdAt = createdAt
+        self.syncID = id.uuidString.lowercased()
         self.syncUpdatedAt = syncUpdatedAt
     }
+
+    var wireID: String { syncID ?? id.uuidString }
 
     var kind: TransactionKind {
         get { TransactionKind(rawValue: kindRawValue) ?? .expense }

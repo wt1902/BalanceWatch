@@ -28,19 +28,24 @@ BalanceWatch/
 ├── AGENTS.md
 ├── README.md
 ├── .github/workflows/build.yml   # CI: сборка для симулятора и устройства
+├── docs/CONTRACT_V2.md           # общий контракт экосистемы v2 (копия)
 ├── branding/                     # аватар репозитория, не входит в бандл
 ├── BalanceWatch.xcodeproj/        # один таргет и одна схема — BalanceWatch
 └── BalanceWatch/
     ├── App/
     │   ├── BalanceWatchApp.swift          # @main, ModelContainer, тема
     │   ├── WatchRootView.swift            # главный экран: баланс, месяц, навигация
-    │   ├── WatchAddTransactionView.swift  # добавление операции
+    │   ├── WatchAddTransactionView.swift  # добавление операции (+ выбор счёта)
+    │   ├── WatchAccountsView.swift        # CurrencyContext в окружении, счета,
+    │   │                                  # выбор пространства (ledger)
     │   └── WatchFeatures.swift            # аналитика, операции, бюджеты,
     │                                      # категории, корректировка баланса, настройки
-    ├── Models/        # SwiftData-модели и системные категории
+    ├── Models/        # SwiftData-модели и системные категории;
+    │                  # V2Records.swift — счета, переводы, курсы, SyncRecord
     ├── Shared/        # BalanceModelContainer, AppTheme,
     │                  # CategoryDesignOptions, ServerSync (ServerAccountStore)
-    ├── Utilities/     # FinanceCalculations, форматирование валют и дат
+    ├── Utilities/     # FinanceCalculations, Money (сотые, курсы, конвертация),
+    │                  # форматирование валют и дат
     ├── Views/Components/CategoryIconView.swift
     └── Assets.xcassets
 ```
@@ -81,7 +86,20 @@ Info.plist нет — ключи задаются через `INFOPLIST_KEY_*`),
 ### 2. SwiftData
 
 Схема зарегистрирована в `BalanceModelContainer.schema`:
-`FinanceTransaction`, `MonthlyBudget`, `CustomCategory`, `SyncTombstone`.
+`FinanceTransaction`, `MonthlyBudget`, `CustomCategory`, `SyncTombstone`,
+`FinanceAccount`, `FinanceTransfer`, `ExchangeRate`, `SyncRecord`.
+
+- Каждое пространство данных (§7 контракта) — отдельное хранилище:
+  личное — прежнее хранилище по умолчанию, общее —
+  `BalanceLedger-<scope>`, где scope — хеш сервер + пользователь + ledger
+  (`LedgerContainers`, `LedgerSelection`). Корневой view пересоздаётся
+  через `.id(scope)`.
+- `syncID` — id записи на проводе. У записей, созданных до v2, он `nil`, и
+  отправляется прежний `id.uuidString` (иначе на сервере появятся дубли);
+  новые записи получают UUID в нижнем регистре, полученные — id с сервера.
+- `extraPayload` хранит незнакомые поля payload и отправляет их обратно
+  (§0.2). `SyncRecord` хранит `recurring`, `goal`, `debt`, `attachment`,
+  `setting` целиком.
 
 - У пользователей уже есть локальные базы. Не удаляй и не переименовывай
   persisted-поля без стратегии миграции; новые поля делай со значением
@@ -107,13 +125,18 @@ Info.plist нет — ключи задаются через `INFOPLIST_KEY_*`),
 
 Центральные правила — в `FinanceCalculations`:
 
-- общий баланс = доходы − расходы;
+- суммы считаются в целых сотых (`Money`), курсы — десятичные строки,
+  округление половиной от нуля; интервалы полуоткрытые `[начало, конец)`;
+- общий баланс = доходы − расходы + переводы, всё в базовой валюте
+  (`CurrencyContext`: `setting baseCurrency`, иначе `@AppStorage("currencyCode")`);
+  нет курса — сумма не входит, показывается «нет курса C→B»;
+- баланс счёта — в его валюте без конвертации;
 - операции с `isBalanceAdjustment == true` входят в общий баланс, но
   **не** входят в периодическую аналитику (месяц/3 мес./12 мес.);
 - расходы группируются по `categoryName`.
 
-Эти правила **одинаковы во всех клиентах Balance** (Apple, Android, web).
-Не меняй их только здесь.
+Эти правила **одинаковы во всех клиентах Balance** (Apple, Android, web)
+и описаны в `docs/CONTRACT_V2.md` §2–3. Не меняй их только здесь.
 
 ### 5. Синхронизация (общий контракт)
 
@@ -129,7 +152,15 @@ Info.plist нет — ключи задаются через `INFOPLIST_KEY_*`),
   изменения сервера и остальных клиентов сломает синхронизацию.
 - При смене URL сервера сессия очищается, cursor/push-state
   сбрасываются, пользователь логинится заново (`saveServer`). Сохраняй
-  это поведение.
+  это поведение. Смена сервера и выход возвращают личное пространство.
+- v2: перед синхронизацией запрашивается `GET /v1/capabilities`; 404 —
+  сервер v1, тогда `supportsV2 == false`: счета и общие бюджеты скрыты,
+  `setting` не отправляется. Незнакомые сущности при pull пропускаются.
+- Общее пространство передаётся заголовком `X-Balance-Ledger` на `v1/sync`;
+  cursor, push-state и журнал удалений имеют суффикс `LedgerSelection.keySuffix`.
+- Из сущностей v2 часы отправляют только `setting` (базовая валюта);
+  счета, переводы, курсы, регулярные операции и прочее только читают.
+  Регулярные операции часы не создают.
 
 ### 6. Безопасность
 
@@ -162,7 +193,10 @@ CI (`.github/workflows/build.yml`) собирает проект на `macos-15`
 симулятора и для устройства без подписи. Перед PR сборка должна быть
 зелёной в обоих вариантах.
 
-Тестового таргета пока нет. Если добавляешь тесты, не завязывай их на
+Тестового таргета пока нет. `Utilities/Money.swift` не зависит от
+SwiftData/SwiftUI, а `FinanceCalculations` работает через протоколы
+`LedgerEntry`/`LedgerTransfer`, поэтому денежную математику можно проверить
+отдельным `swiftc`-прогоном на macOS (с заглушкой `FinanceTransaction`). Если добавляешь тесты, не завязывай их на
 текущую дату и локаль — явно фиксируй `Calendar`, `Date` и formatter'ы.
 Добавив тестовый таргет, добавь и шаг `test` в CI.
 
