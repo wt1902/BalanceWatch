@@ -489,7 +489,7 @@ struct WatchSettingsView: View {
     @StateObject private var account = ServerAccountStore.shared
     @AppStorage("currencyCode") private var currencyCode = SupportedCurrency.RUB.rawValue
     @AppStorage("appTheme") private var appTheme = AppTheme.system.rawValue
-    @Query(filter: #Predicate<SyncRecord> { $0.entity == "setting" && $0.recordID == "baseCurrency" })
+    @Query(filter: #Predicate<SyncRecord> { $0.entityName == "setting" && $0.recordID == "baseCurrency" })
     private var baseSetting: [SyncRecord]
 
     private var currencyCodes: [String] {
@@ -508,7 +508,7 @@ struct WatchSettingsView: View {
                 record.payload = payload
                 record.syncUpdatedAt = .now
             } else {
-                modelContext.insert(SyncRecord(entity: "setting", recordID: SyncRecord.baseCurrencyKey, payload: payload, syncUpdatedAt: .now))
+                modelContext.insert(SyncRecord(entityName: "setting", recordID: SyncRecord.baseCurrencyKey, payload: payload, syncUpdatedAt: .now))
             }
         })
     }

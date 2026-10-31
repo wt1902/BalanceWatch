@@ -498,9 +498,9 @@ final class ServerAccountStore: ObservableObject {
     private func pushSettings(context: ModelContext, after threshold: Date, through cutoff: Date, cursor: Int64) async throws {
         let lowerBound = threshold, upperBound = cutoff
         let items = try context.fetch(FetchDescriptor<SyncRecord>(predicate: #Predicate { item in
-            item.entity == "setting" && item.syncUpdatedAt >= lowerBound && item.syncUpdatedAt <= upperBound
+            item.entityName == "setting" && item.syncUpdatedAt >= lowerBound && item.syncUpdatedAt <= upperBound
         }))
-        try await sendPush(items.map { SyncChange(entity:$0.entity, id:$0.recordID, deleted:false, updatedAt:$0.syncUpdatedAt, payload:$0.payload) }, cursor:cursor)
+        try await sendPush(items.map { SyncChange(entity:$0.entityName, id:$0.recordID, deleted:false, updatedAt:$0.syncUpdatedAt, payload:$0.payload) }, cursor:cursor)
     }
 
     private func pushTombstones(through cutoff: Date, cursor: Int64) async throws {
@@ -660,12 +660,12 @@ final class ServerAccountStore: ObservableObject {
     /// Регулярные операции часы не исполняют (§4).
     private func applyRecord(_ change: SyncChange, context: ModelContext) throws {
         let entity = change.entity, recordID = change.id
-        let existing = try context.fetch(FetchDescriptor<SyncRecord>(predicate:#Predicate { $0.entity == entity && $0.recordID == recordID })).first
+        let existing = try context.fetch(FetchDescriptor<SyncRecord>(predicate:#Predicate { $0.entityName == entity && $0.recordID == recordID })).first
         if let existing, existing.syncUpdatedAt > change.updatedAt { return }
         if change.deleted { if let existing { context.delete(existing) }; return }
         guard let data = change.payload else { return }
         if let existing { existing.payload = data; existing.syncUpdatedAt = change.updatedAt }
-        else { context.insert(SyncRecord(entity:entity, recordID:recordID, payload:data, syncUpdatedAt:change.updatedAt)) }
+        else { context.insert(SyncRecord(entityName:entity, recordID:recordID, payload:data, syncUpdatedAt:change.updatedAt)) }
     }
 
     private func transaction(id: UUID, context: ModelContext) throws -> FinanceTransaction? {

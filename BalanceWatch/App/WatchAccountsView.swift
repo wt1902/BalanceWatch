@@ -20,7 +20,7 @@ extension EnvironmentValues {
 struct CurrencyContextProvider<Content: View>: View {
     @Query private var accounts: [FinanceAccount]
     @Query private var rates: [ExchangeRate]
-    @Query(filter: #Predicate<SyncRecord> { $0.entity == "setting" && $0.recordID == "baseCurrency" })
+    @Query(filter: #Predicate<SyncRecord> { $0.entityName == "setting" && $0.recordID == "baseCurrency" })
     private var baseSetting: [SyncRecord]
     @AppStorage("currencyCode") private var currencyCode = SupportedCurrency.RUB.rawValue
     @ViewBuilder let content: Content

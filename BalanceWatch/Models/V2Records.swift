@@ -70,13 +70,15 @@ final class ExchangeRate {
 /// `attachment`, `setting`. Payload хранится целиком, поэтому все поля сохраняются.
 @Model
 final class SyncRecord {
-    var entity: String = ""
+    /// Не `entity`: так называется встроенное свойство CoreData, и предикат
+    /// по нему ломает SQL-запрос SwiftData.
+    var entityName: String = ""
     var recordID: String = ""
     var payload: Data = Data()
     var syncUpdatedAt: Date = Date.now
 
-    init(entity: String, recordID: String, payload: Data, syncUpdatedAt: Date) {
-        self.entity = entity
+    init(entityName: String, recordID: String, payload: Data, syncUpdatedAt: Date) {
+        self.entityName = entityName
         self.recordID = recordID
         self.payload = payload
         self.syncUpdatedAt = syncUpdatedAt
