@@ -238,7 +238,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 14;
+				CURRENT_PROJECT_VERSION = 15;
 				DEVELOPMENT_TEAM = K3AS449A74;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -247,7 +247,7 @@
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Подключение к вашему серверу Balance для синхронизации данных.";
 				INFOPLIST_KEY_WKWatchKitApp = YES;
 				INFOPLIST_KEY_WKWatchOnly = YES;
-				MARKETING_VERSION = 3.1.1;
+				MARKETING_VERSION = 3.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.tolamironcenko.Balance.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
@@ -265,7 +265,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 14;
+				CURRENT_PROJECT_VERSION = 15;
 				DEVELOPMENT_TEAM = K3AS449A74;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Баланс";
@@ -273,7 +273,7 @@
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Подключение к вашему серверу Balance для синхронизации данных.";
 				INFOPLIST_KEY_WKWatchKitApp = YES;
 				INFOPLIST_KEY_WKWatchOnly = YES;
-				MARKETING_VERSION = 3.1.1;
+				MARKETING_VERSION = 3.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.tolamironcenko.Balance.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;

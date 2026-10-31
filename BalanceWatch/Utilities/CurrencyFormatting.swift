@@ -10,10 +10,13 @@ enum SupportedCurrency: String, CaseIterable, Identifiable {
 }
 
 extension Double {
+    /// Целые суммы без копеек, остальные — ровно с двумя знаками («8 480,50 ₽»),
+    /// как во Flutter-клиенте.
     func formattedCurrency(code: String) -> String {
-        formatted(
+        let whole = (self * 100).rounded().truncatingRemainder(dividingBy: 100) == 0
+        return formatted(
             .currency(code: code)
-                .precision(.fractionLength(0 ... 2))
+                .precision(.fractionLength(whole ? 0 : 2))
                 .presentation(.narrow)
         )
     }

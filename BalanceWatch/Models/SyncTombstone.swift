@@ -30,8 +30,9 @@ struct SyncDeletionRecord: Codable, Identifiable {
 }
 
 enum SyncDeletionStore {
-    private static let storageKey = "balance.server.deletionJournal.v1"
-    private static let quarantineKey = "balance.server.deletionJournal.corrupt"
+    // Журнал свой у каждого пространства (§7): у личного — прежний ключ.
+    private static var storageKey: String { "balance.server.deletionJournal.v1" + LedgerSelection.keySuffix }
+    private static var quarantineKey: String { "balance.server.deletionJournal.corrupt" + LedgerSelection.keySuffix }
     private static let lock = NSLock()
 
     static func add(entity: String, recordID: String, updatedAt: Date = .now) {
@@ -93,17 +94,17 @@ enum SyncDeletionStore {
 
 extension ModelContext {
     func deleteForSync(_ transaction: FinanceTransaction) {
-        SyncDeletionStore.add(entity:"transaction", recordID:transaction.id.uuidString)
+        SyncDeletionStore.add(entity:"transaction", recordID:transaction.wireID)
         delete(transaction)
     }
 
     func deleteForSync(_ category: CustomCategory) {
-        SyncDeletionStore.add(entity:"category", recordID:category.id.uuidString)
+        SyncDeletionStore.add(entity:"category", recordID:category.wireID)
         delete(category)
     }
 
     func deleteForSync(_ budget: MonthlyBudget) {
-        SyncDeletionStore.add(entity:"budget", recordID:budget.id.uuidString)
+        SyncDeletionStore.add(entity:"budget", recordID:budget.wireID)
         delete(budget)
     }
 }

@@ -29,17 +29,19 @@ private enum WatchAnalyticsPeriod: String, CaseIterable, Identifiable {
 
 struct WatchAnalyticsView: View {
     @Query private var transactions: [FinanceTransaction]
-    @AppStorage("currencyCode") private var currencyCode = SupportedCurrency.RUB.rawValue
+    @Environment(\.currencyContext) private var currency
     @State private var period = WatchAnalyticsPeriod.month
 
+    private var currencyCode: String { currency.base }
     private var interval: DateInterval { period.interval() }
     private var summary: FinancePeriodSummary {
-        FinanceCalculations.summary(transactions: transactions, in: interval)
+        FinanceCalculations.summary(transactions: transactions, in: interval, context: currency)
     }
     private var spending: [CategorySpending] {
         Array(FinanceCalculations.spendingByCategory(
             transactions: transactions,
-            in: interval
+            in: interval,
+            context: currency
         ).prefix(6))
     }
     private var savingsRate: Double {
@@ -53,13 +55,17 @@ struct WatchAnalyticsView: View {
             }
 
             Section("Итоги") {
-                metric("Доходы", summary.income, .green)
-                metric("Расходы", summary.expenses, .red)
+                metric("Доходы", summary.income, BalancePalette.income)
+                metric("Расходы", summary.expenses, BalancePalette.expense)
                 LabeledContent("Результат", value: summary.balance.formattedCurrency(code: currencyCode))
                 LabeledContent(
                     "Сбережения",
                     value: savingsRate.formatted(.number.precision(.fractionLength(0))) + "%"
                 )
+                if let warning = currency.missingRateWarning(summary.missing) {
+                    Label(warning, systemImage: "exclamationmark.triangle")
+                        .font(.caption2).foregroundStyle(.orange)
+                }
             }
 
             Section("Категории") {
@@ -94,7 +100,7 @@ struct WatchAnalyticsView: View {
 
     private func tint(for item: CategorySpending) -> Color {
         item.colorName == "auto"
-            ? FinanceCategory.find(named: item.name)?.tint ?? .indigo
+            ? FinanceCategory.find(named: item.name)?.tint ?? BalancePalette.forest
             : FinanceCategory.color(named: item.colorName)
     }
 }
@@ -103,7 +109,7 @@ struct WatchTransactionsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \FinanceTransaction.date, order: .reverse)
     private var transactions: [FinanceTransaction]
-    @AppStorage("currencyCode") private var currencyCode = SupportedCurrency.RUB.rawValue
+    @Environment(\.currencyContext) private var currency
     @State private var selectedKind: TransactionKind?
     @State private var searchText = ""
     @State private var showingAdd = false
@@ -141,8 +147,11 @@ struct WatchTransactionsView: View {
                         VStack(alignment: .leading) {
                             Text(transaction.categoryName).lineLimit(1)
                             Text((transaction.kind == .income ? "+" : "−")
-                                + transaction.amount.formattedCurrency(code: currencyCode))
+                                + transaction.amount.formattedCurrency(code: currency.currency(of: transaction)))
                                 .font(.caption2)
+                            if let title = currency.accountTitle(transaction.accountID) {
+                                Text(title).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                            }
                         }
                     }
                 }
@@ -164,7 +173,7 @@ struct WatchTransactionsView: View {
 
     private func tint(_ transaction: FinanceTransaction) -> Color {
         transaction.categoryColorName == "auto"
-            ? FinanceCategory.find(named: transaction.categoryName)?.tint ?? .indigo
+            ? FinanceCategory.find(named: transaction.categoryName)?.tint ?? BalancePalette.forest
             : FinanceCategory.color(named: transaction.categoryColorName)
     }
 }
@@ -172,8 +181,10 @@ struct WatchTransactionsView: View {
 struct WatchBudgetsView: View {
     @Query private var budgets: [MonthlyBudget]
     @Query private var transactions: [FinanceTransaction]
-    @AppStorage("currencyCode") private var currencyCode = SupportedCurrency.RUB.rawValue
+    @Environment(\.currencyContext) private var currency
     @State private var showingEditor = false
+
+    private var currencyCode: String { currency.base }
 
     private var interval: DateInterval {
         FinanceCalculations.monthInterval(containing: .now)
@@ -184,7 +195,8 @@ struct WatchBudgetsView: View {
     private var spending: [String: Double] {
         Dictionary(uniqueKeysWithValues: FinanceCalculations.spendingByCategory(
             transactions: transactions,
-            in: interval
+            in: interval,
+            context: currency
         ).map { ($0.name, $0.amount) })
     }
 
@@ -255,7 +267,7 @@ private struct WatchBudgetEditor: View {
 
     private func save() {
         for category in categories {
-            let value = limits[category.name, default: 0]
+            let value = Money.double(Money.cents(limits[category.name, default: 0]))
             let existing = budgets.first { $0.categoryName == category.name }
             if value > 0 {
                 if let existing {
@@ -429,11 +441,16 @@ struct WatchBalanceAdjustmentView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Query private var transactions: [FinanceTransaction]
-    @AppStorage("currencyCode") private var currencyCode = SupportedCurrency.RUB.rawValue
+    @Query private var transfers: [FinanceTransfer]
+    @Environment(\.currencyContext) private var currency
+    @StateObject private var account = ServerAccountStore.shared
     @State private var desired = 0.0
     @State private var note = ""
 
-    private var current: Double { FinanceCalculations.totalBalance(transactions: transactions) }
+    private var currencyCode: String { currency.base }
+    private var current: Double {
+        FinanceCalculations.totalBalance(transactions: transactions, transfers: transfers, context: currency).value
+    }
     private var difference: Double { desired - current }
 
     var body: some View {
@@ -453,26 +470,53 @@ struct WatchBalanceAdjustmentView: View {
     private func save() {
         guard abs(difference) >= 0.005 else { return }
         modelContext.insert(FinanceTransaction(
-            amount: abs(difference),
+            amount: Money.double(Money.cents(abs(difference))),
             note: note.isEmpty ? "Ручная корректировка баланса" : note,
             categoryName: "Корректировка",
             categoryIcon: "slider.horizontal.3",
             categoryColorName: "indigo",
             isBalanceAdjustment: true,
-            kind: difference > 0 ? .income : .expense
+            kind: difference > 0 ? .income : .expense,
+            currency: account.supportsV2 ? currency.base : nil
         ))
         dismiss()
     }
 }
 
 struct WatchSettingsView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.currencyContext) private var currency
+    @StateObject private var account = ServerAccountStore.shared
     @AppStorage("currencyCode") private var currencyCode = SupportedCurrency.RUB.rawValue
     @AppStorage("appTheme") private var appTheme = AppTheme.system.rawValue
+    @Query(filter: #Predicate<SyncRecord> { $0.entityName == "setting" && $0.recordID == "baseCurrency" })
+    private var baseSetting: [SyncRecord]
+
+    private var currencyCodes: [String] {
+        let codes = SupportedCurrency.allCases.map(\.rawValue)
+        return codes.contains(currency.base) ? codes : codes + [currency.base]
+    }
+
+    /// Базовая валюта: на сервере v2 — общая настройка `baseCurrency`,
+    /// иначе — локальная настройка часов (как в v1).
+    private var baseCurrency: Binding<String> {
+        Binding(get: { currency.base }, set: { code in
+            currencyCode = code
+            guard account.supportsV2 || !baseSetting.isEmpty,
+                  let payload = try? JSONSerialization.data(withJSONObject: ["value": code]) else { return }
+            if let record = baseSetting.first {
+                record.payload = payload
+                record.syncUpdatedAt = .now
+            } else {
+                modelContext.insert(SyncRecord(entityName: "setting", recordID: SyncRecord.baseCurrencyKey, payload: payload, syncUpdatedAt: .now))
+            }
+        })
+    }
 
     var body: some View {
         Form {
-            Picker("Валюта", selection: $currencyCode) {
-                ForEach(SupportedCurrency.allCases) { Text($0.rawValue).tag($0.rawValue) }
+            Picker("Валюта", selection: baseCurrency) {
+                ForEach(currencyCodes, id: \.self) { Text($0).tag($0) }
             }
             Picker("Тема", selection: $appTheme) {
                 ForEach(AppTheme.allCases) { Text($0.title).tag($0.rawValue) }

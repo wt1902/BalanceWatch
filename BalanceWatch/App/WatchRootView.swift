@@ -2,16 +2,29 @@ import SwiftData
 import SwiftUI
 
 struct WatchRootView: View {
+    var body: some View {
+        CurrencyContextProvider { WatchHomeView() }
+    }
+}
+
+private struct WatchHomeView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.currencyContext) private var currency
+    @StateObject private var account = ServerAccountStore.shared
     @Query(sort: \FinanceTransaction.date, order: .reverse)
     private var transactions: [FinanceTransaction]
-    @AppStorage("currencyCode") private var currencyCode = SupportedCurrency.RUB.rawValue
+    @Query private var transfers: [FinanceTransfer]
     @State private var showingAddTransaction = false
 
+    private var currencyCode: String { currency.base }
+    private var total: MoneyTotal {
+        FinanceCalculations.totalBalance(transactions: transactions, transfers: transfers, context: currency)
+    }
     private var monthSummary: FinancePeriodSummary {
         FinanceCalculations.summary(
             transactions: transactions,
-            in: FinanceCalculations.monthInterval(containing: .now)
+            in: FinanceCalculations.monthInterval(containing: .now),
+            context: currency
         )
     }
 
@@ -20,19 +33,27 @@ struct WatchRootView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
                     VStack(alignment: .leading, spacing: 3) {
-                        Text("Общий баланс")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Text(FinanceCalculations.totalBalance(transactions: transactions)
-                            .formattedCurrency(code: currencyCode))
+                        HStack(spacing: 5) {
+                            Image(systemName: "wallet.bifold")
+                                .font(.caption2.weight(.semibold))
+                            Text("Общий баланс")
+                                .font(.caption)
+                        }
+                        .foregroundStyle(BalancePalette.mint.opacity(0.85))
+                        Text(total.value.formattedCurrency(code: currencyCode))
                             .font(.title3.bold())
                             .minimumScaleFactor(0.7)
+                        if let warning = currency.missingRateWarning(total.missing.union(monthSummary.missing)) {
+                            Label(warning, systemImage: "exclamationmark.triangle")
+                                .font(.caption2)
+                                .lineLimit(2)
+                        }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(12)
                     .background(
                         LinearGradient(
-                            colors: [.indigo, .purple],
+                            colors: [BalancePalette.cardTop, BalancePalette.cardBottom],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ),
@@ -43,13 +64,15 @@ struct WatchRootView: View {
                     HStack(spacing: 8) {
                         watchMetric(
                             title: "Доходы",
+                            symbol: "arrow.down.left",
                             amount: monthSummary.income,
-                            tint: .green
+                            tint: BalancePalette.income
                         )
                         watchMetric(
                             title: "Расходы",
+                            symbol: "arrow.up.right",
                             amount: monthSummary.expenses,
-                            tint: .red
+                            tint: BalancePalette.expense
                         )
                     }
 
@@ -60,8 +83,16 @@ struct WatchRootView: View {
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.borderedProminent)
+                    .tint(BalancePalette.forest)
 
                     VStack(spacing: 4) {
+                        if account.supportsV2 {
+                            NavigationLink {
+                                WatchAccountsView()
+                            } label: {
+                                Label("Счета", systemImage: "creditcard")
+                            }
+                        }
                         NavigationLink {
                             WatchAnalyticsView()
                         } label: {
@@ -111,9 +142,9 @@ struct WatchRootView: View {
                                         .font(.caption)
                                         .lineLimit(1)
                                     Text((transaction.kind == .income ? "+" : "−")
-                                        + transaction.amount.formattedCurrency(code: currencyCode))
+                                        + transaction.amount.formattedCurrency(code: currency.currency(of: transaction)))
                                         .font(.caption2.weight(.semibold))
-                                        .foregroundStyle(transaction.kind == .income ? .green : .secondary)
+                                        .foregroundStyle(transaction.kind == .income ? BalancePalette.income : .secondary)
                                 }
                                 Spacer()
                             }
@@ -121,7 +152,7 @@ struct WatchRootView: View {
                     }
                 }
             }
-            .navigationTitle("Баланс")
+            .navigationTitle(account.ledgerID.isEmpty ? "Баланс" : account.ledgerName)
             .sheet(isPresented: $showingAddTransaction) {
                 WatchAddTransactionView()
             }
@@ -134,25 +165,38 @@ struct WatchRootView: View {
         }
     }
 
-    private func watchMetric(title: String, amount: Double, tint: Color) -> some View {
+    private func watchMetric(title: String, symbol: String, amount: Double, tint: Color) -> some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text(title)
+            Label(title, systemImage: symbol)
                 .font(.caption2)
                 .foregroundStyle(.secondary)
+                .labelStyle(TintedIconLabelStyle(tint: tint))
             Text(amount.formattedCurrency(code: currencyCode))
                 .font(.caption.bold())
+                .foregroundStyle(tint)
                 .lineLimit(1)
                 .minimumScaleFactor(0.65)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(9)
-        .background(tint.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
+        .background(tint.opacity(0.14), in: RoundedRectangle(cornerRadius: 12))
     }
 
     private func transactionTint(_ transaction: FinanceTransaction) -> Color {
         if transaction.categoryColorName == "auto" {
-            return FinanceCategory.find(named: transaction.categoryName)?.tint ?? .indigo
+            return FinanceCategory.find(named: transaction.categoryName)?.tint ?? BalancePalette.forest
         }
         return FinanceCategory.color(named: transaction.categoryColorName)
+    }
+}
+
+/// Иконка метрики в цвете метрики, подпись — вторичным цветом.
+private struct TintedIconLabelStyle: LabelStyle {
+    let tint: Color
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(spacing: 3) {
+            configuration.icon.foregroundStyle(tint)
+            configuration.title
+        }
     }
 }
